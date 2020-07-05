@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 rustbox = "0.11.0"
 anyhow = "1.0.31"
+rand = "0.7.3"

@@ -1,6 +1,10 @@
 use anyhow::*;
 use rustbox::{InitOptions, RustBox, Event, Key, RB_BOLD, RB_NORMAL, Color};
 use std::{thread, time::Duration, collections::{BTreeSet, VecDeque}};
+use rand::Rng;
+
+const BASE_DELAY: f32 = 250.;
+const ACCELERATION_BASE: f32 = 0.95;
 
 fn main() -> Result<()> {
     let mut game = Game::new()?;
@@ -14,29 +18,48 @@ struct Game {
     rb: RustBox,
     snake: Snake,
     pellets: BTreeSet<Pos>,
+    score: usize,
 }
 
 impl Game {
     fn new() -> Result<Self> {
         let rb = RustBox::init(InitOptions::default())
             .context("Failed to initialize terminal")?;
-        
-        let mut pellets = BTreeSet::new();
 
-        pellets.insert(Pos::new(20, 20));
-
-        Ok(Self {
+        let mut game = Self {
             rb,
             snake: Snake::new(),
-            pellets,
-        })
+            pellets: BTreeSet::new(),
+            score: 0,
+        };
+
+        for _ in 0..100 {
+            game.spawn_pellet();
+        }
+
+        Ok(game)
+    }
+
+    fn spawn_pellet(&mut self) {
+        let mut rng = rand::thread_rng();
+        let width = rng.gen_range(0, self.rb.width()) as isize;
+        let height = rng.gen_range(0, self.rb.height()) as isize;
+
+        self.pellets.insert(Pos::new(width, height));
     }
 
     fn run(&mut self) -> Result<()> {
         loop {
             self.render();
 
-            thread::sleep(Duration::from_millis(500));
+            let mut delay = BASE_DELAY * ACCELERATION_BASE.powi(self.score as i32);
+
+            if self.snake.direction().is_vertical() {
+                delay *= 1.5;
+            }
+
+            let delay = Duration::from_millis(delay as u64);
+            thread::sleep(delay);
 
             if self.run_logic_step()? == GameAction::Exit {
                 return Ok(());
@@ -46,6 +69,16 @@ impl Game {
 
     fn render(&self) {
         self.rb.clear();
+
+        // Score
+        self.rb.print(
+            0,
+            0,
+            RB_BOLD,
+            Color::Yellow,
+            Color::Default,
+            &format!("Score: {}", self.score),
+        );
 
         // Pellets
         for pellet in &self.pellets {
@@ -89,6 +122,10 @@ impl Game {
 
         let grow = self.pellets.remove(&self.snake.position);
 
+        if grow {
+            self.score += 1;
+        }
+
         self.snake.crawl(grow);
 
         Ok(GameAction::KeepRunning)
@@ -121,6 +158,10 @@ impl Snake {
                 Pos::new(4, 10),
             ]),
         }
+    }
+
+    fn direction(&self) -> &Direction {
+        &self.direction
     }
 
     fn crawl(&mut self, grow: bool) {
@@ -178,10 +219,6 @@ impl Snake {
             );
         }
     }
-
-    fn is_dead(&self) -> bool {
-        todo!()
-    }
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -196,9 +233,19 @@ impl Pos {
     }
 }
 
+#[derive(Copy, Clone)]
 enum Direction {
     Up,
     Down,
     Left,
     Right,
+}
+
+impl Direction {
+    fn is_vertical(&self) -> bool {
+        match self {
+            Self::Up | Self::Down => true,
+            _ => false,
+        }
+    }
 }
