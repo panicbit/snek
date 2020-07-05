@@ -1,6 +1,6 @@
 use anyhow::*;
 use rustbox::{InitOptions, RustBox, Event, Key, RB_BOLD, RB_NORMAL, Color};
-use std::{thread, time::Duration, collections::VecDeque};
+use std::{thread, time::Duration, collections::{BTreeSet, VecDeque}};
 
 fn main() -> Result<()> {
     let mut game = Game::new()?;
@@ -13,6 +13,7 @@ fn main() -> Result<()> {
 struct Game {
     rb: RustBox,
     snake: Snake,
+    pellets: BTreeSet<Pos>,
 }
 
 impl Game {
@@ -20,15 +21,22 @@ impl Game {
         let rb = RustBox::init(InitOptions::default())
             .context("Failed to initialize terminal")?;
         
+        let mut pellets = BTreeSet::new();
+
+        pellets.insert(Pos::new(20, 20));
+
         Ok(Self {
             rb,
             snake: Snake::new(),
+            pellets,
         })
     }
 
     fn run(&mut self) -> Result<()> {
         loop {
             self.render();
+
+            thread::sleep(Duration::from_millis(500));
 
             if self.run_logic_step()? == GameAction::Exit {
                 return Ok(());
@@ -38,9 +46,27 @@ impl Game {
 
     fn render(&self) {
         self.rb.clear();
+
+        // Pellets
+        for pellet in &self.pellets {
+            if pellet.x < 0 || pellet.y < 0 {
+                continue;
+            }
+
+            self.rb.print_char(
+                pellet.x as usize,
+                pellet.y as usize,
+                RB_BOLD,
+                Color::Default,
+                Color::Red,
+                ' ',
+            );
+        }
+
+        // Snake
         self.snake.render(&self.rb);
+
         self.rb.present();
-        thread::sleep(Duration::from_millis(500));
     }
 
     fn run_logic_step(&mut self) -> Result<GameAction> {
@@ -61,7 +87,9 @@ impl Game {
             }
         }
 
-        self.snake.crawl();
+        let grow = self.pellets.remove(&self.snake.position);
+
+        self.snake.crawl(grow);
 
         Ok(GameAction::KeepRunning)
     }
@@ -95,8 +123,11 @@ impl Snake {
         }
     }
 
-    fn crawl(&mut self) {
-        self.tail.pop_back();
+    fn crawl(&mut self, grow: bool) {
+        if !grow {
+            self.tail.pop_back();
+        }
+
         self.tail.push_front(self.position);
 
         match self.direction {
@@ -153,7 +184,7 @@ impl Snake {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 struct Pos {
     x: isize,
     y: isize,
