@@ -2,7 +2,7 @@ use anyhow::*;
 use rustbox::{InitOptions, RustBox, Event, Key, RB_BOLD, Color};
 use std::{thread, time::Duration, collections::BTreeSet};
 use rand::Rng;
-use crate::{BASE_DELAY, Pos, ACCELERATION_BASE, GameAction, Direction, Snake};
+use crate::{Pos, ACCELERATION_BASE, GameAction, Direction, Snake, FIELD_TRAVERSAL_TIME_MILLIS};
 
 pub struct Game {
     rb: RustBox,
@@ -44,12 +44,11 @@ impl Game {
         loop {
             self.render();
 
-            let mut delay = BASE_DELAY * ACCELERATION_BASE.powi(self.score as i32);
-
-            if self.snake.direction().is_vertical() {
-                delay *= 1.5;
-            }
-
+            let field_size = match self.snake.direction().is_vertical() {
+                false => self.rb.width() as f32,
+                true => self.rb.height() as f32 * 1.5,
+            };
+            let delay = FIELD_TRAVERSAL_TIME_MILLIS / field_size * ACCELERATION_BASE.powi(self.score as i32);
             let delay = Duration::from_millis(delay as u64);
             thread::sleep(delay);
 
