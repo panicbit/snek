@@ -105,15 +105,17 @@ impl Game {
     }
 
     fn run_logic_step(&mut self) -> Result<GameAction> {
+        let mut next_direction = *self.snake.direction();
+
         loop {
             let event = self.rb.peek_event(Duration::from_millis(1), false)?;
 
             match event {
                 Event::KeyEvent(key) => match key {
-                    Key::Up => self.snake.set_direction(Direction::Up),
-                    Key::Down => self.snake.set_direction(Direction::Down),
-                    Key::Left => self.snake.set_direction(Direction::Left),
-                    Key::Right => self.snake.set_direction(Direction::Right),
+                    Key::Up => next_direction = Direction::Up,
+                    Key::Down => next_direction = Direction::Down,
+                    Key::Left => next_direction = Direction::Left,
+                    Key::Right => next_direction = Direction::Right,
                     Key::Esc | Key::Char('q') => return Ok(GameAction::Exit),
                     _ => continue
                 },
@@ -121,6 +123,8 @@ impl Game {
                 _ => continue,
             }
         }
+
+        self.snake.set_direction(next_direction);
 
         if self.lost {
             return Ok(GameAction::KeepRunning);
