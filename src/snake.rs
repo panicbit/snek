@@ -110,7 +110,7 @@ impl Snake {
                 Direction::Left => '←',
                 Direction::Right => '→',
             };
-            let head_symbol = 'Ö';
+            // let head_symbol = 'Ö';
 
             let head_color = match self.is_dead {
                 true => Color::Red,

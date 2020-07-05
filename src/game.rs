@@ -139,11 +139,21 @@ impl Game {
 
         self.snake.crawl(grow);
 
-        if self.snake.eating_itself() {
+        // Game Over condition
+        if self.snake.eating_itself() || self.snake_outside_bounds() {
             self.snake.kill();
             self.lost = true;
         }
 
         Ok(GameAction::KeepRunning)
+    }
+
+    fn snake_outside_bounds(&self) -> bool {
+        let width = self.rb.width() as isize;
+        let height = self.rb.height() as isize;
+        let position = self.snake.position();
+
+           position.x < 0 || position.x >= width
+        || position.y < 0 || position.y >= height
     }
 }
