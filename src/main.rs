@@ -1,6 +1,6 @@
 use anyhow::*;
-use rustbox::{InitOptions, RustBox, Event, Key, RB_BOLD, Color};
-use std::{thread, time::Duration};
+use rustbox::{InitOptions, RustBox, Event, Key, RB_BOLD, RB_NORMAL, Color};
+use std::{thread, time::Duration, collections::VecDeque};
 
 fn main() -> Result<()> {
     let mut game = Game::new()?;
@@ -76,17 +76,29 @@ enum GameAction {
 struct Snake {
     position: Pos,
     direction: Direction,
+    tail: VecDeque<Pos>,
 }
 
 impl Snake {
     fn new() -> Self {
         Self {
-            position: Pos::new(0, 0),
+            position: Pos::new(10, 10),
             direction: Direction::Right,
+            tail: VecDeque::from(vec![
+                Pos::new(9, 10),
+                Pos::new(8, 10),
+                Pos::new(7, 10),
+                Pos::new(6, 10),
+                Pos::new(5, 10),
+                Pos::new(4, 10),
+            ]),
         }
     }
 
     fn crawl(&mut self) {
+        self.tail.pop_back();
+        self.tail.push_front(self.position);
+
         match self.direction {
             Direction::Up => self.position.y -= 1,
             Direction::Down => self.position.y += 1,
@@ -100,18 +112,40 @@ impl Snake {
     }
 
     fn render(&self, rb: &RustBox) {
-        if self.position.x < 0 || self.position.y < 0 {
-            return;
+        // Tail
+        for segment in &self.tail {
+            if segment.x < 0 || segment.y < 0 {
+                continue;
+            }
+
+            rb.print_char(
+                segment.x as usize,
+                segment.y as usize,
+                RB_NORMAL,
+                Color::Green,
+                Color::Default,
+                'o'
+            );
         }
 
-        rb.print_char(
-            self.position.x as usize,
-            self.position.y as usize,
-            RB_BOLD,
-            Color::Green,
-            Color::Default,
-            'O'
-        );
+        // Head
+        if self.position.x >= 0 && self.position.y >= 0 {
+            let head_symbol = match self.direction {
+                Direction::Up => '⮉',
+                Direction::Down => '⮋',
+                Direction::Left => '⮈',
+                Direction::Right => '⮊',
+            };
+
+            rb.print_char(
+                self.position.x as usize,
+                self.position.y as usize,
+                RB_BOLD,
+                Color::Green,
+                Color::Default,
+                head_symbol,
+            );
+        }
     }
 
     fn is_dead(&self) -> bool {
@@ -119,6 +153,7 @@ impl Snake {
     }
 }
 
+#[derive(Copy, Clone)]
 struct Pos {
     x: isize,
     y: isize,
