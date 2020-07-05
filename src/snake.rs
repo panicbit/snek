@@ -5,7 +5,8 @@ use rustbox::{RustBox, RB_BOLD, RB_NORMAL, Color};
 pub struct Snake {
     position: Pos,
     direction: Direction,
-    tail: VecDeque<Pos>,
+    old_direction: Direction,
+    tail: VecDeque<Segment>,
     is_dead: bool,
 }
 
@@ -14,13 +15,14 @@ impl Snake {
         Self {
             position: Pos::new(10, 10),
             direction: Direction::Right,
+            old_direction: Direction::Right,
             tail: VecDeque::from(vec![
-                Pos::new(9, 10),
-                Pos::new(8, 10),
-                Pos::new(7, 10),
-                Pos::new(6, 10),
-                Pos::new(5, 10),
-                Pos::new(4, 10),
+                Segment::new(Pos::new(9, 10), '─'),
+                Segment::new(Pos::new(8, 10), '─'),
+                Segment::new(Pos::new(7, 10), '─'),
+                Segment::new(Pos::new(6, 10), '─'),
+                Segment::new(Pos::new(5, 10), '─'),
+                Segment::new(Pos::new(4, 10), '─'),
             ]),
             is_dead: false,
         }
@@ -39,7 +41,7 @@ impl Snake {
             self.tail.pop_back();
         }
 
-        self.tail.push_front(self.position);
+        self.grow_head_segment();
 
         match self.direction {
             Direction::Up => self.position.y -= 1,
@@ -49,16 +51,34 @@ impl Snake {
         }
     }
 
-    pub fn eating_itself(&self) -> bool {
-        self.tail.contains(&self.position)
+    fn grow_head_segment(&mut self) {
+        use Direction::*;
+
+        let symbol = match (self.old_direction, self.direction) {
+            (Up, Up) | (Down, Down) => '│',
+            (Left, Left) | (Right, Right) => '─',
+            (Up, Right) | (Left, Down) => '╭',
+            (Up, Left) | (Right, Down) => '╮',
+            (Down, Left) | (Right, Up) => '╯',
+            (Down, Right) | (Left, Up) => '╰',
+            _ => '#',
+        };
+
+        let new_segment = Segment::new(self.position, symbol);
+        self.tail.push_front(new_segment);
     }
 
-    pub fn set_direction(&mut self, direction: Direction) {
-        if self.is_dead || direction == self.direction.opposite(){
+    pub fn eating_itself(&self) -> bool {
+        self.tail.iter().any(|segment| segment.position == self.position)
+    }
+
+    pub fn set_direction(&mut self, new_direction: Direction) {
+        if self.is_dead || new_direction == self.direction.opposite(){
             return;
         }
 
-        self.direction = direction;
+        self.old_direction = self.direction;
+        self.direction = new_direction;
     }
 
     pub fn kill(&mut self) {
@@ -68,32 +88,33 @@ impl Snake {
     pub fn render(&self, rb: &RustBox) {
         // Tail
         for segment in &self.tail {
-            if segment.x < 0 || segment.y < 0 {
+            if segment.position.x < 0 || segment.position.y < 0 {
                 continue;
             }
 
             rb.print_char(
-                segment.x as usize,
-                segment.y as usize,
+                segment.position.x as usize,
+                segment.position.y as usize,
                 RB_NORMAL,
+                Color::Yellow,
                 Color::Green,
-                Color::Default,
-                'o'
+                segment.symbol,
             );
         }
 
         // Head
         if self.position.x >= 0 && self.position.y >= 0 {
             let head_symbol = match self.direction {
-                Direction::Up => '⮉',
-                Direction::Down => '⮋',
-                Direction::Left => '⮈',
-                Direction::Right => '⮊',
+                Direction::Up => '↑',
+                Direction::Down => '↓',
+                Direction::Left => '←',
+                Direction::Right => '→',
             };
+            let head_symbol = 'Ö';
 
             let head_color = match self.is_dead {
                 true => Color::Red,
-                false => Color::Green,
+                false => Color::Yellow,
             };
 
             rb.print_char(
@@ -101,9 +122,23 @@ impl Snake {
                 self.position.y as usize,
                 RB_BOLD,
                 head_color,
-                Color::Default,
+                Color::Green,
                 head_symbol,
             );
+        }
+    }
+}
+
+struct Segment {
+    position: Pos,
+    symbol: char,
+}
+
+impl Segment {
+    fn new(position: Pos, symbol: char) -> Self {
+        Self {
+            position,
+            symbol,
         }
     }
 }
