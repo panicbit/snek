@@ -10,6 +10,7 @@ pub struct Game {
     pellets: BTreeSet<Pos>,
     score: usize,
     lost: bool,
+    paused: bool,
 }
 
 impl Game {
@@ -23,6 +24,7 @@ impl Game {
             pellets: BTreeSet::new(),
             score: 0,
             lost: false,
+            paused: false,
         };
 
         game.spawn_pellet();
@@ -117,11 +119,16 @@ impl Game {
                     Key::Left => next_direction = Direction::Left,
                     Key::Right => next_direction = Direction::Right,
                     Key::Esc | Key::Char('q') => return Ok(GameAction::Exit),
+                    Key::Char(' ') => self.paused = !self.paused,
                     _ => continue
                 },
                 Event::NoEvent => break,
                 _ => continue,
             }
+        }
+
+        if self.paused {
+            return Ok(GameAction::KeepRunning);
         }
 
         self.snake.set_direction(next_direction);
