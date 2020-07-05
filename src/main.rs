@@ -19,6 +19,7 @@ struct Game {
     snake: Snake,
     pellets: BTreeSet<Pos>,
     score: usize,
+    lost: bool,
 }
 
 impl Game {
@@ -31,11 +32,10 @@ impl Game {
             snake: Snake::new(),
             pellets: BTreeSet::new(),
             score: 0,
+            lost: false,
         };
 
-        for _ in 0..100 {
-            game.spawn_pellet();
-        }
+        game.spawn_pellet();
 
         Ok(game)
     }
@@ -80,6 +80,18 @@ impl Game {
             &format!("Score: {}", self.score),
         );
 
+        // Game Over
+        if self.lost {
+            self.rb.print(
+                0,
+                1,
+                RB_BOLD,
+                Color::Red,
+                Color::Default,
+                "GAME OVER",
+            );
+        }
+
         // Pellets
         for pellet in &self.pellets {
             if pellet.x < 0 || pellet.y < 0 {
@@ -120,13 +132,23 @@ impl Game {
             }
         }
 
+        if self.lost {
+            return Ok(GameAction::KeepRunning);
+        }
+
         let grow = self.pellets.remove(&self.snake.position);
 
         if grow {
             self.score += 1;
+            self.spawn_pellet();
         }
 
         self.snake.crawl(grow);
+
+        if self.snake.eating_itself() {
+            self.snake.kill();
+            self.lost = true;
+        }
 
         Ok(GameAction::KeepRunning)
     }
@@ -142,6 +164,7 @@ struct Snake {
     position: Pos,
     direction: Direction,
     tail: VecDeque<Pos>,
+    is_dead: bool,
 }
 
 impl Snake {
@@ -157,6 +180,7 @@ impl Snake {
                 Pos::new(5, 10),
                 Pos::new(4, 10),
             ]),
+            is_dead: false,
         }
     }
 
@@ -179,8 +203,20 @@ impl Snake {
         }
     }
 
+    fn eating_itself(&self) -> bool {
+        self.tail.contains(&self.position)
+    }
+
     fn set_direction(&mut self, direction: Direction) {
+        if self.is_dead || direction == self.direction.opposite(){
+            return;
+        }
+
         self.direction = direction;
+    }
+
+    fn kill(&mut self) {
+        self.is_dead = true;
     }
 
     fn render(&self, rb: &RustBox) {
@@ -209,11 +245,16 @@ impl Snake {
                 Direction::Right => '⮊',
             };
 
+            let head_color = match self.is_dead {
+                true => Color::Red,
+                false => Color::Green,
+            };
+
             rb.print_char(
                 self.position.x as usize,
                 self.position.y as usize,
                 RB_BOLD,
-                Color::Green,
+                head_color,
                 Color::Default,
                 head_symbol,
             );
@@ -233,7 +274,7 @@ impl Pos {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq)]
 enum Direction {
     Up,
     Down,
@@ -246,6 +287,15 @@ impl Direction {
         match self {
             Self::Up | Self::Down => true,
             _ => false,
+        }
+    }
+
+    fn opposite(&self) -> Direction {
+        match self {
+            Self::Up => Self::Down,
+            Self::Down => Self::Up,
+            Self::Left => Self::Right,
+            Self::Right => Self::Left,
         }
     }
 }
