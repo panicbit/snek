@@ -6,7 +6,7 @@ use game::Game;
 mod snake;
 use snake::Snake;
 
-const BASE_DELAY: f32 = 250.;
+const BASE_DELAY: f32 = 230.;
 const ACCELERATION_BASE: f32 = 0.95;
 
 fn main() -> Result<()> {
