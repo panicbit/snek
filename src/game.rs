@@ -1,5 +1,5 @@
 use anyhow::*;
-use rustbox::{InitOptions, RustBox, Event, Key, RB_BOLD, Color};
+use rustbox::{InitOptions, RustBox, Event, Key, RB_BOLD, RB_NORMAL, Color};
 use std::{thread, time::Duration, collections::BTreeSet};
 use rand::Rng;
 use crate::{Point, ACCELERATION_BASE, GameAction, Direction, Snake, FIELD_TRAVERSAL_TIME_MILLIS, LossyBuffer, Rect};
@@ -21,10 +21,10 @@ impl Game {
             .context("Failed to initialize terminal")?;
 
         let field = Rect {
-            x: 0,
-            y: 0,
-            width: rb.width(),
-            height: rb.height(),
+            x: 1,
+            y: 1,
+            width: rb.width() - 2,
+            height: rb.height() - 2,
         };
 
         let mut game = Self {
@@ -45,10 +45,10 @@ impl Game {
 
     fn spawn_pellet(&mut self) {
         let mut rng = rand::thread_rng();
-        let width = rng.gen_range(0, self.rb.width()) as isize;
-        let height = rng.gen_range(0, self.rb.height()) as isize;
+        let x = rng.gen_range(self.field.x1(), self.field.x2()) as isize;
+        let y = rng.gen_range(self.field.y1(), self.field.y2()) as isize;
 
-        self.pellets.insert(Point::new(width, height));
+        self.pellets.insert(Point::new(x, y));
     }
 
     pub fn run(&mut self) -> Result<()> {
@@ -72,20 +72,23 @@ impl Game {
     fn render(&self) {
         self.rb.clear();
 
+        // Border
+        self.render_border();
+
         // Score
         self.rb.print(
-            0,
+            1,
             0,
             RB_BOLD,
             Color::Yellow,
             Color::Default,
-            &format!("Score: {}", self.score),
+            &format!("╣Score: {}╠", self.score),
         );
 
         // Game Over
         if self.lost {
             self.rb.print(
-                0,
+                2,
                 1,
                 RB_BOLD,
                 Color::Red,
@@ -114,6 +117,38 @@ impl Game {
         self.snake.render(&self.rb);
 
         self.rb.present();
+    }
+
+    fn render_border(&self) {
+        let draw = |x, y, symbol| self.rb.print_char(
+            x,
+            y,
+            RB_NORMAL,
+            Color::Default,
+            Color::Blue,
+            symbol,
+        );
+        let field = &self.field;
+
+        // top and bottom
+        for x in (field.x1() - 1)..(field.x2() + 1) {
+            for &y in &[field.y1() - 1, field.y2()] {
+                draw(x as usize, y as usize, '═');
+            }
+        }
+
+        // left and right
+        for y in (field.y1() - 1)..(field.y2() + 1) {
+            for &x in &[field.x1() - 1, field.x2()] {
+                draw(x as usize, y as usize, '║');
+            }
+        }
+
+        // corners
+        draw((field.x1() - 1) as usize, (field.y1() - 1) as usize, '╔');
+        draw(field.x2() as usize, (field.y1() - 1) as usize, '╗');
+        draw((field.x1() - 1) as usize, field.y2() as usize, '╚');
+        draw(field.x2() as usize, field.y2() as usize, '╝');
     }
 
     fn run_logic_step(&mut self) -> Result<GameAction> {
