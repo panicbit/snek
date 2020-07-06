@@ -92,13 +92,9 @@ impl Snake {
     pub fn render(&self, rb: &RustBox) {
         // Tail
         for segment in &self.tail {
-            if segment.position.x < 0 || segment.position.y < 0 {
-                continue;
-            }
-
             rb.print_char(
-                segment.position.x as usize,
-                segment.position.y as usize,
+                segment.position.x,
+                segment.position.y,
                 RB_NORMAL,
                 Color::Yellow,
                 Color::Green,
@@ -107,29 +103,27 @@ impl Snake {
         }
 
         // Head
-        if self.position.x >= 0 && self.position.y >= 0 {
-            let head_symbol = match self.direction {
-                Direction::Up => '↑',
-                Direction::Down => '↓',
-                Direction::Left => '←',
-                Direction::Right => '→',
-            };
-            // let head_symbol = 'Ö';
+        let head_symbol = match self.direction {
+            Direction::Up => '↑',
+            Direction::Down => '↓',
+            Direction::Left => '←',
+            Direction::Right => '→',
+        };
+        // let head_symbol = 'Ö';
 
-            let head_color = match self.is_dead {
-                true => Color::Red,
-                false => Color::Yellow,
-            };
+        let head_color = match self.is_dead {
+            true => Color::Red,
+            false => Color::Yellow,
+        };
 
-            rb.print_char(
-                self.position.x as usize,
-                self.position.y as usize,
-                RB_BOLD,
-                head_color,
-                Color::Green,
-                head_symbol,
-            );
-        }
+        rb.print_char(
+            self.position.x,
+            self.position.y,
+            RB_BOLD,
+            head_color,
+            Color::Green,
+            head_symbol,
+        );
     }
 }
 

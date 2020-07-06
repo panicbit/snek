@@ -45,8 +45,8 @@ impl Game {
 
     fn spawn_pellet(&mut self) {
         let mut rng = rand::thread_rng();
-        let x = rng.gen_range(self.field.x1(), self.field.x2()) as isize;
-        let y = rng.gen_range(self.field.y1(), self.field.y2()) as isize;
+        let x = rng.gen_range(self.field.x1(), self.field.x2());
+        let y = rng.gen_range(self.field.y1(), self.field.y2());
 
         self.pellets.insert(Point::new(x, y));
     }
@@ -99,13 +99,9 @@ impl Game {
 
         // Pellets
         for pellet in &self.pellets {
-            if pellet.x < 0 || pellet.y < 0 {
-                continue;
-            }
-
             self.rb.print_char(
-                pellet.x as usize,
-                pellet.y as usize,
+                pellet.x,
+                pellet.y,
                 RB_BOLD,
                 Color::Default,
                 Color::Red,
@@ -131,24 +127,24 @@ impl Game {
         let field = &self.field;
 
         // top and bottom
-        for x in (field.x1() - 1)..(field.x2() + 1) {
-            for &y in &[field.y1() - 1, field.y2()] {
-                draw(x as usize, y as usize, '═');
+        for x in (field.left() - 1)..(field.right() + 1) {
+            for &y in &[field.top() - 1, field.bottom()] {
+                draw(x, y, '═');
             }
         }
 
         // left and right
-        for y in (field.y1() - 1)..(field.y2() + 1) {
-            for &x in &[field.x1() - 1, field.x2()] {
-                draw(x as usize, y as usize, '║');
+        for y in (field.top() - 1)..(field.bottom() + 1) {
+            for &x in &[field.left() - 1, field.right()] {
+                draw(x, y, '║');
             }
         }
 
         // corners
-        draw((field.x1() - 1) as usize, (field.y1() - 1) as usize, '╔');
-        draw(field.x2() as usize, (field.y1() - 1) as usize, '╗');
-        draw((field.x1() - 1) as usize, field.y2() as usize, '╚');
-        draw(field.x2() as usize, field.y2() as usize, '╝');
+        draw(field.left() - 1, field.top() - 1, '╔');
+        draw(field.right(), field.top() - 1, '╗');
+        draw(field.left() - 1, field.bottom(), '╚');
+        draw(field.right(), field.bottom(), '╝');
     }
 
     fn run_logic_step(&mut self) -> Result<GameAction> {

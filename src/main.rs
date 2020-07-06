@@ -26,12 +26,12 @@ enum GameAction {
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Point {
-    x: isize,
-    y: isize,
+    x: usize,
+    y: usize,
 }
 
 impl Point {
-    fn new(x: isize, y: isize) -> Self {
+    fn new(x: usize, y: usize) -> Self {
         Self { x, y }
     }
 }
@@ -86,31 +86,47 @@ impl<T> LossyBuffer<T> {
 
 #[derive(Copy, Clone)]
 struct Rect {
-    pub x: isize,
-    pub y: isize,
+    pub x: usize,
+    pub y: usize,
     pub width: usize,
     pub height: usize,
 }
 
 impl Rect {
-    pub fn x1(&self) -> isize {
+    pub fn left(&self) -> usize {
         self.x
     }
 
-    pub fn x2(&self) -> isize {
-        self.x + self.width as isize
+    pub fn right(&self) -> usize {
+        self.x + self.width
     }
 
-    pub fn y1(&self) -> isize {
+    pub fn top(&self) -> usize {
         self.y
     }
 
-    pub fn y2(&self) -> isize {
-        self.y + self.height as isize
+    pub fn bottom(&self) -> usize {
+        self.y + self.height
+    }
+
+    pub fn x1(&self) -> usize {
+        self.left()
+    }
+
+    pub fn x2(&self) -> usize {
+        self.right()
+    }
+
+    pub fn y1(&self) -> usize {
+        self.top()
+    }
+
+    pub fn y2(&self) -> usize {
+        self.bottom()
     }
 
     pub fn contains(&self, point: &Point) -> bool {
-        self.x1() <= point.x && point.x < self.x2() &&
-        self.y1() <= point.y && point.y < self.y2()
+        self.left() <= point.x && point.x < self.right() &&
+        self.top() <= point.y && point.y < self.bottom()
     }
 }
