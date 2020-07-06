@@ -70,10 +70,20 @@ impl Game {
 
     fn spawn_pellet(&mut self) {
         let mut rng = rand::thread_rng();
-        let x = rng.gen_range(self.field.left(), self.field.right());
-        let y = rng.gen_range(self.field.top(), self.field.bottom());
 
-        self.pellets.insert(Point::new(x, y));
+        loop {
+            let x = rng.gen_range(self.field.left(), self.field.right());
+            let y = rng.gen_range(self.field.top(), self.field.bottom());
+            let pellet = Point::new(x, y);
+
+            if self.walls.contains(&pellet) {
+                continue
+            }
+
+            self.pellets.insert(pellet);
+
+            break
+        }
     }
 
     pub fn run(&mut self) -> Result<()> {
