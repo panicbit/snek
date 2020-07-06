@@ -2,7 +2,7 @@ use anyhow::*;
 use rustbox::{InitOptions, RustBox, Event, Key, RB_BOLD, RB_NORMAL, Color};
 use std::{thread, time::Duration, collections::BTreeSet};
 use rand::Rng;
-use crate::{Point, ACCELERATION_BASE, GameAction, Direction, Snake, FIELD_TRAVERSAL_TIME_MILLIS, LossyBuffer, Rect};
+use crate::{Point, ACCELERATION_BASE, GameAction, Direction, Snake, FIELD_TRAVERSAL_TIME_MILLIS, LossyBuffer, Rect, PERCENT_WALLS, MAX_SPEED_LEVEL};
 
 pub struct Game {
     rb: RustBox,
@@ -13,6 +13,7 @@ pub struct Game {
     paused: bool,
     input_buffer: LossyBuffer<Key>,
     field: Rect,
+    walls: BTreeSet<Point>,
 }
 
 impl Game {
@@ -36,17 +37,41 @@ impl Game {
             paused: false,
             input_buffer: LossyBuffer::new(2),
             field,
+            walls: BTreeSet::new(),
         };
 
+        game.spawn_walls();
         game.spawn_pellet();
 
         Ok(game)
     }
 
+    fn spawn_walls(&mut self) {
+        let num_walls = self.field.area() as f32 * PERCENT_WALLS / 100.;
+        let num_walls = num_walls as usize;
+        let mut rng = rand::thread_rng();
+
+        for _ in 0..num_walls {
+            loop {
+                let x = rng.gen_range(self.field.left(), self.field.right());
+                let y = rng.gen_range(self.field.top(), self.field.bottom());
+                let wall = Point::new(x, y);
+
+                if self.walls.contains(&wall) || self.pellets.contains(&wall) {
+                    continue
+                }
+
+                self.walls.insert(wall);
+
+                break
+            }
+        }
+    }
+
     fn spawn_pellet(&mut self) {
         let mut rng = rand::thread_rng();
-        let x = rng.gen_range(self.field.x1(), self.field.x2());
-        let y = rng.gen_range(self.field.y1(), self.field.y2());
+        let x = rng.gen_range(self.field.left(), self.field.right());
+        let y = rng.gen_range(self.field.top(), self.field.bottom());
 
         self.pellets.insert(Point::new(x, y));
     }
@@ -59,7 +84,8 @@ impl Game {
                 false => self.rb.width() as f32,
                 true => self.rb.height() as f32 * 1.5,
             };
-            let delay = FIELD_TRAVERSAL_TIME_MILLIS / field_size * ACCELERATION_BASE.powi(self.score as i32);
+            let speed_level = self.score.min(MAX_SPEED_LEVEL) as i32;
+            let delay = FIELD_TRAVERSAL_TIME_MILLIS / field_size * ACCELERATION_BASE.powi(speed_level);
             let delay = Duration::from_millis(delay as u64);
             thread::sleep(delay);
 
@@ -106,6 +132,18 @@ impl Game {
                 Color::Default,
                 Color::Red,
                 ' ',
+            );
+        }
+
+        // Walls
+        for wall in &self.walls {
+            self.rb.print_char(
+                wall.x,
+                wall.y,
+                RB_NORMAL,
+                Color::Default,
+                Color::Blue,
+                '#',
             );
         }
 
@@ -205,6 +243,7 @@ impl Game {
     }
 
     fn snake_outside_bounds(&self) -> bool {
-        !self.field.contains(self.snake.position())
+        !self.field.contains(self.snake.position()) ||
+        self.walls.contains(self.snake.position())
     }
 }

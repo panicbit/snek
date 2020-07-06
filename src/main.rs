@@ -7,6 +7,8 @@ mod snake;
 use snake::Snake;
 use std::collections::VecDeque;
 
+const MAX_SPEED_LEVEL: usize = 8;
+const PERCENT_WALLS: f32 = 2.;
 const FIELD_TRAVERSAL_TIME_MILLIS: f32 = 5000.;
 const ACCELERATION_BASE: f32 = 0.95;
 
@@ -109,20 +111,16 @@ impl Rect {
         self.y + self.height
     }
 
-    pub fn x1(&self) -> usize {
-        self.left()
+    pub fn width(&self) -> usize {
+        self.width
     }
 
-    pub fn x2(&self) -> usize {
-        self.right()
+    pub fn height(&self) -> usize {
+        self.height
     }
 
-    pub fn y1(&self) -> usize {
-        self.top()
-    }
-
-    pub fn y2(&self) -> usize {
-        self.bottom()
+    pub fn area(&self) -> usize {
+        self.width() * self.height()
     }
 
     pub fn contains(&self, point: &Point) -> bool {
