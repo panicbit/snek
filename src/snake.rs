@@ -91,13 +91,19 @@ impl Snake {
 
     pub fn render(&self, rb: &RustBox) {
         // Tail
-        for segment in &self.tail {
+        for (i, segment) in self.tail.iter().enumerate() {
+            let (fg_color, bg_color) = if i % 2 == 0 {
+                (Color::Green, Color::Yellow)
+            } else {
+                (Color::Yellow, Color::Green)
+            };
+
             rb.print_char(
                 segment.position.x,
                 segment.position.y,
                 RB_NORMAL,
-                Color::Yellow,
-                Color::Green,
+                fg_color,
+                bg_color,
                 segment.symbol,
             );
         }
