@@ -83,3 +83,34 @@ impl<T> LossyBuffer<T> {
         self.elements.pop_front()
     }
 }
+
+#[derive(Copy, Clone)]
+struct Rect {
+    pub x: isize,
+    pub y: isize,
+    pub width: usize,
+    pub height: usize,
+}
+
+impl Rect {
+    pub fn x1(&self) -> isize {
+        self.x
+    }
+
+    pub fn x2(&self) -> isize {
+        self.x + self.width as isize
+    }
+
+    pub fn y1(&self) -> isize {
+        self.y
+    }
+
+    pub fn y2(&self) -> isize {
+        self.y + self.height as isize
+    }
+
+    pub fn contains(&self, point: &Point) -> bool {
+        self.x1() <= point.x && point.x < self.x2() &&
+        self.y1() <= point.y && point.y < self.y2()
+    }
+}

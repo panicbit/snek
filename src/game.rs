@@ -2,7 +2,7 @@ use anyhow::*;
 use rustbox::{InitOptions, RustBox, Event, Key, RB_BOLD, Color};
 use std::{thread, time::Duration, collections::BTreeSet};
 use rand::Rng;
-use crate::{Point, ACCELERATION_BASE, GameAction, Direction, Snake, FIELD_TRAVERSAL_TIME_MILLIS, LossyBuffer};
+use crate::{Point, ACCELERATION_BASE, GameAction, Direction, Snake, FIELD_TRAVERSAL_TIME_MILLIS, LossyBuffer, Rect};
 
 pub struct Game {
     rb: RustBox,
@@ -12,12 +12,20 @@ pub struct Game {
     lost: bool,
     paused: bool,
     input_buffer: LossyBuffer<Key>,
+    field: Rect,
 }
 
 impl Game {
     pub fn new() -> Result<Self> {
         let rb = RustBox::init(InitOptions::default())
             .context("Failed to initialize terminal")?;
+
+        let field = Rect {
+            x: 0,
+            y: 0,
+            width: rb.width(),
+            height: rb.height(),
+        };
 
         let mut game = Self {
             rb,
@@ -27,6 +35,7 @@ impl Game {
             lost: false,
             paused: false,
             input_buffer: LossyBuffer::new(2),
+            field,
         };
 
         game.spawn_pellet();
@@ -165,11 +174,6 @@ impl Game {
     }
 
     fn snake_outside_bounds(&self) -> bool {
-        let width = self.rb.width() as isize;
-        let height = self.rb.height() as isize;
-        let position = self.snake.position();
-
-           position.x < 0 || position.x >= width
-        || position.y < 0 || position.y >= height
+        !self.field.contains(self.snake.position())
     }
 }

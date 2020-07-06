@@ -38,7 +38,7 @@ impl Snake {
 
     pub fn crawl(&mut self, grow: bool) {
         if !grow {
-            self.tail.pop_back();
+            self.remove_tail_segment();
         }
 
         self.grow_head_segment();
@@ -49,6 +49,10 @@ impl Snake {
             Direction::Left => self.position.x -= 1,
             Direction::Right => self.position.x += 1,
         }
+    }
+
+    fn remove_tail_segment(&mut self) {
+        self.tail.pop_back();
     }
 
     fn grow_head_segment(&mut self) {
