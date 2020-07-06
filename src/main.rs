@@ -5,6 +5,7 @@ use game::Game;
 
 mod snake;
 use snake::Snake;
+use std::collections::VecDeque;
 
 const FIELD_TRAVERSAL_TIME_MILLIS: f32 = 5000.;
 const ACCELERATION_BASE: f32 = 0.95;
@@ -58,5 +59,27 @@ impl Direction {
             Self::Left => Self::Right,
             Self::Right => Self::Left,
         }
+    }
+}
+
+struct LossyBuffer<T> {
+    elements: VecDeque<T>,
+}
+
+impl<T> LossyBuffer<T> {
+    pub fn new(capacity: usize) -> Self {
+        Self {
+            elements: VecDeque::with_capacity(capacity),
+        }
+    }
+
+    pub fn push(&mut self, element: T) {
+        if self.elements.len() < self.elements.capacity() {
+            self.elements.push_back(element);
+        }
+    }
+
+    pub fn pop(&mut self) -> Option<T> {
+        self.elements.pop_front()
     }
 }

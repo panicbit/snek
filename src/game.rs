@@ -2,7 +2,7 @@ use anyhow::*;
 use rustbox::{InitOptions, RustBox, Event, Key, RB_BOLD, Color};
 use std::{thread, time::Duration, collections::BTreeSet};
 use rand::Rng;
-use crate::{Pos, ACCELERATION_BASE, GameAction, Direction, Snake, FIELD_TRAVERSAL_TIME_MILLIS};
+use crate::{Pos, ACCELERATION_BASE, GameAction, Direction, Snake, FIELD_TRAVERSAL_TIME_MILLIS, LossyBuffer};
 
 pub struct Game {
     rb: RustBox,
@@ -11,6 +11,7 @@ pub struct Game {
     score: usize,
     lost: bool,
     paused: bool,
+    input_buffer: LossyBuffer<Key>,
 }
 
 impl Game {
@@ -25,6 +26,7 @@ impl Game {
             score: 0,
             lost: false,
             paused: false,
+            input_buffer: LossyBuffer::new(2),
         };
 
         game.spawn_pellet();
@@ -108,21 +110,17 @@ impl Game {
     fn run_logic_step(&mut self) -> Result<GameAction> {
         let mut next_direction = *self.snake.direction();
 
-        loop {
-            let event = self.rb.peek_event(Duration::from_millis(1), false)?;
+        self.buffer_inputs()?;
 
-            match event {
-                Event::KeyEvent(key) => match key {
-                    Key::Up => next_direction = Direction::Up,
-                    Key::Down => next_direction = Direction::Down,
-                    Key::Left => next_direction = Direction::Left,
-                    Key::Right => next_direction = Direction::Right,
-                    Key::Esc | Key::Char('q') => return Ok(GameAction::Exit),
-                    Key::Char(' ') => self.paused = !self.paused,
-                    _ => continue
-                },
-                Event::NoEvent => break,
-                _ => continue,
+        if let Some(key) = self.input_buffer.pop() {
+            match key {
+                Key::Up => next_direction = Direction::Up,
+                Key::Down => next_direction = Direction::Down,
+                Key::Left => next_direction = Direction::Left,
+                Key::Right => next_direction = Direction::Right,
+                Key::Esc | Key::Char('q') => return Ok(GameAction::Exit),
+                Key::Char(' ') => self.paused = !self.paused,
+                _ => {}
             }
         }
 
@@ -152,6 +150,18 @@ impl Game {
         }
 
         Ok(GameAction::KeepRunning)
+    }
+
+    fn buffer_inputs(&mut self) -> Result<()> {
+        loop {
+            let event = self.rb.peek_event(Duration::from_millis(1), false)?;
+
+            match event {
+                Event::KeyEvent(key) => self.input_buffer.push(key),
+                Event::NoEvent => return Ok(()),
+                _ => continue,
+            }
+        }
     }
 
     fn snake_outside_bounds(&self) -> bool {
