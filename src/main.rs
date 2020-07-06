@@ -25,12 +25,12 @@ enum GameAction {
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct Pos {
+pub struct Point {
     x: isize,
     y: isize,
 }
 
-impl Pos {
+impl Point {
     fn new(x: isize, y: isize) -> Self {
         Self { x, y }
     }

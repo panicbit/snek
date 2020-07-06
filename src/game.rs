@@ -2,12 +2,12 @@ use anyhow::*;
 use rustbox::{InitOptions, RustBox, Event, Key, RB_BOLD, Color};
 use std::{thread, time::Duration, collections::BTreeSet};
 use rand::Rng;
-use crate::{Pos, ACCELERATION_BASE, GameAction, Direction, Snake, FIELD_TRAVERSAL_TIME_MILLIS, LossyBuffer};
+use crate::{Point, ACCELERATION_BASE, GameAction, Direction, Snake, FIELD_TRAVERSAL_TIME_MILLIS, LossyBuffer};
 
 pub struct Game {
     rb: RustBox,
     snake: Snake,
-    pellets: BTreeSet<Pos>,
+    pellets: BTreeSet<Point>,
     score: usize,
     lost: bool,
     paused: bool,
@@ -39,7 +39,7 @@ impl Game {
         let width = rng.gen_range(0, self.rb.width()) as isize;
         let height = rng.gen_range(0, self.rb.height()) as isize;
 
-        self.pellets.insert(Pos::new(width, height));
+        self.pellets.insert(Point::new(width, height));
     }
 
     pub fn run(&mut self) -> Result<()> {

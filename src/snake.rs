@@ -1,9 +1,9 @@
-use crate::{Direction, Pos};
+use crate::{Direction, Point};
 use std::collections::VecDeque;
 use rustbox::{RustBox, RB_BOLD, RB_NORMAL, Color};
 
 pub struct Snake {
-    position: Pos,
+    position: Point,
     direction: Direction,
     old_direction: Direction,
     tail: VecDeque<Segment>,
@@ -13,22 +13,22 @@ pub struct Snake {
 impl Snake {
     pub fn new() -> Self {
         Self {
-            position: Pos::new(10, 10),
+            position: Point::new(10, 10),
             direction: Direction::Right,
             old_direction: Direction::Right,
             tail: VecDeque::from(vec![
-                Segment::new(Pos::new(9, 10), '─'),
-                Segment::new(Pos::new(8, 10), '─'),
-                Segment::new(Pos::new(7, 10), '─'),
-                Segment::new(Pos::new(6, 10), '─'),
-                Segment::new(Pos::new(5, 10), '─'),
-                Segment::new(Pos::new(4, 10), '─'),
+                Segment::new(Point::new(9, 10), '─'),
+                Segment::new(Point::new(8, 10), '─'),
+                Segment::new(Point::new(7, 10), '─'),
+                Segment::new(Point::new(6, 10), '─'),
+                Segment::new(Point::new(5, 10), '─'),
+                Segment::new(Point::new(4, 10), '─'),
             ]),
             is_dead: false,
         }
     }
 
-    pub fn position(&self) -> &Pos {
+    pub fn position(&self) -> &Point {
         &self.position
     }
 
@@ -130,12 +130,12 @@ impl Snake {
 }
 
 struct Segment {
-    position: Pos,
+    position: Point,
     symbol: char,
 }
 
 impl Segment {
-    fn new(position: Pos, symbol: char) -> Self {
+    fn new(position: Point, symbol: char) -> Self {
         Self {
             position,
             symbol,
